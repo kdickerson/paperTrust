@@ -1,0 +1,15 @@
+The basis of an application to generate and verify QR codes to be printed onto documents.
+Could be used when you have a fairly small amount of data that needs to be authenticated.
+Data is signed and then written into a QR code.
+A user can then scan the QR code to verify the data against the signature.
+Of course, the public key used for verification would need to come from a trusted source.
+I envision a system which looks up the public key using the embedded Org ID from a mediator company (say, paperTrust!).
+The application would also have the certificate for paperTrust installed and use that to verify that
+  codes obtained are valid.
+The system would still be vulnerable to changes to the actual software doing the scanning though.
+
+Run demo.py for an example check generation and verification - written for Linux currently.
+  This demo will generate a check using the demo private key.
+  You can then print the check.
+  If you have a camera you can then scan the video stream for the QR code.
+  When the QR code is found it will read out the data and verify the signature against the demo public key.

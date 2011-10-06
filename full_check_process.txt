@@ -1,0 +1,87 @@
+Python 2.6.6 (r266:84292, Sep 15 2010, 15:52:39) 
+[GCC 4.4.5] on linux2
+Type "help", "copyright", "credits" or "license" for more information.
+>>> import M2Crypto
+>>> import os
+>>> M2Crypto.Rand.rand_seed(os.urandom(1024))
+>>> bank_key = M2Crypto.RSA.gen_key(1024, 65537)
+...............++++++
+........++++++
+>>> bank_key.save_key('demo-private.pem', None)
+1
+>>> bank_key.save_pub_key('demo-public.pem')
+1
+>>> check_data = {}
+>>> check_data.date = "4/12/2011"
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+AttributeError: 'dict' object has no attribute 'date'
+>>> check_data['date'] = "4/12/2011"
+>>> check_data['amount'] = "132.45"
+>>> check_data['check_num'] = "1001"
+>>> check_data['routing'] = "12345678"
+>>> check_data['account'] = "87654321"
+>>> check_data
+{'date': '4/12/2011', 'check_num': '1001', 'amount': '132.45', 'account': '87654321', 'routing': '12345678'}
+>>> check_data['recipient'] = "Kyle Dickerson"
+>>> print str(check_data)
+{'account': '87654321', 'check_num': '1001', 'amount': '132.45', 'routing': '12345678', 'date': '4/12/2011', 'recipient': 'Kyle Dickerson'}
+>>> check_data_str = str(check_data)
+>>> signEVP = M2Crypto.EVP.load_key('demo-private.pem')
+>>> signEVP.sign_init()
+>>> signEVP.sign_update(check_data_str)
+>>> string_sig = signEVP.sign_final()
+>>> print string_sig.encode('base64')
+edFtvkMpR+RfigxrVTGHz2mmzJNtG25CGNKUcltRfR1bcR6/sOMVac0u987xRfqABxxGGxg+qv2W
+WF67Hy/eU6lxQ1lOKKSQOCdPO+E/E5osCombiUqCHZ1to0Y/VbjPhDsZ/ptk9NaMSTbqMqvBXuQF
+hmETCyFayffvjJ63jIA=
+
+>>> import qrencode
+>>> check_qr_code = qrencode.encode_scaled(check_data_str.encode('base64'), 150)
+>>> #check_qr_code[2].save('check_data.png')
+>>> qr_code = qrencode.encode_scaled(string_sig.encode('base64'), 150)
+>>> #qr_code[2].save("signed_check.png")
+>>> 
+>>> import Image
+>>> 
+>>> blank_check = Image.open('blankcheck.jpg').convert('L')
+>>> blank_check.paste(check_data_img, (100,50))
+>>> blank_check.paste(check_sig_img, (300,50))
+>>> blank_check.save('filled_check.png')
+>>>
+>>>
+>>> import zbar
+>>> scanner = zbar.ImageScanner()
+>>> scanner.parse_config('enable')
+
+>>> pil = Image.open('filled_check.png').convert('L')
+>>> width, height = pil.size
+>>> raw = pil.tostring()
+>>> image = zbar.Image(width, height, 'Y800', raw)
+>>> scanner.scan(image)
+2
+>>> disovered_codes = []
+>>> for symbol in image:
+...   if str(symbol.type) == 'QRCODE':
+...     discoverd_codes.append(symbol.data.decode('base64'))
+... 
+>>> discovered_codes[0]
+"{'account': '87654321', 'check_num': '1001', 'amount': '132.45', 'routing': '12345678', 'date': '4/12/2011', 'recipient': 'Kyle Dickerson'}"
+>>> discovered_codes[1].encode('base64')
+'edFtvkMpR+RfigxrVTGHz2mmzJNtG25CGNKUcltRfR1bcR6/sOMVac0u987xRfqABxxGGxg+qv2W\nWF67Hy/eU6lxQ1lOKKSQOCdPO+E/E5osCombiUqCHZ1to0Y/VbjPhDsZ/ptk9NaMSTbqMqvBXuQF\nhmETCyFayffvjJ63jIA=\n'
+>>> pub_key = M2Crypto.RSA.load_pub_key('demo-public.pem')
+>>> verifyEVP = M2Crypto.EVP.PKey()
+>>> verifyEVP.assign_rsa(pub_key)
+1
+>>> verifyEVP.verify_init()
+>>> verifyEVP.verify_update(discovered_codes[0])
+1
+>>> if verifyEVP.verify_final(discovered_codes[1]) == 1:
+...   print "Signature Verified"
+... else:
+...   print "Not valid signature!"
+... 
+Signature Verified
+>>> verifyEVP.verify_final(discovered_codes[1])
+1
+
