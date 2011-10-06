@@ -1,5 +1,6 @@
 The basis of an application to generate and verify QR codes to be printed onto documents.
 Could be used when you have a fairly small amount of data that needs to be authenticated.
+  Examples: Cashier's Check, Money Order, Driver's License, Event Tickets, etc.
 Data is signed and then written into a QR code.
 A user can then scan the QR code to verify the data against the signature.
 Of course, the public key used for verification would need to come from a trusted source.
